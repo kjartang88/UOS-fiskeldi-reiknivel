@@ -23,6 +23,9 @@
   .dot-grey  { background: #888; }
 
   .card { background: #fff; border-radius: 12px; padding: 20px 24px; border: 1px solid #e8eaed; margin-bottom: 8px; }
+  .green-card { border-left: 3px solid #2e7d52; }
+  .blue-card  { border-left: 3px solid #1565c0; }
+  .grey-card  { border-left: 3px solid #bbb; }
 
   .field { margin-bottom: 16px; }
   .field:last-child { margin-bottom: 0; }
@@ -34,34 +37,24 @@
     transition: border 0.15s;
   }
   .field input:focus { border-color: #1565c0; background: #fff; }
-  .green-card { border-left: 3px solid #2e7d52; }
-  .blue-card  { border-left: 3px solid #1565c0; }
-  .grey-card  { border-left: 3px solid #bbb; }
 
   button.calc-btn {
     width: 100%; margin-top: 28px; padding: 13px;
     background: #1a1a2e; color: #fff; border: none; border-radius: 10px;
     font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
-    letter-spacing: 0.02em;
   }
   button.calc-btn:hover { background: #2d2d4e; }
 
   .results { margin-top: 28px; display: none; }
   .results.visible { display: block; }
-
   .results h2 { font-size: 0.95rem; font-weight: 600; color: #1a1a2e; margin-bottom: 16px; }
 
   .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  .result-card {
-    background: #fff; border-radius: 12px; padding: 18px 20px;
-    border: 1px solid #e8eaed;
-  }
-  .result-card .r-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 6px; }
-  .result-card .r-value { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
-  .result-card .r-unit  { font-size: 0.78rem; color: #888; margin-top: 2px; }
-  .result-card .r-breakdown { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 0.78rem; color: #666; line-height: 1.7; }
-
+  .result-card { background: #fff; border-radius: 12px; padding: 18px 20px; border: 1px solid #e8eaed; }
+  .r-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 6px; }
+  .r-value { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
+  .r-unit  { font-size: 0.78rem; color: #888; margin-top: 2px; }
+  .r-breakdown { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 0.78rem; color: #666; line-height: 1.7; }
   .permit-check { margin-top: 8px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; padding: 4px 8px; display: inline-block; }
   .permit-ok   { background: #e8f5e9; color: #2e7d52; }
   .permit-over { background: #fdecea; color: #c62828; }
@@ -78,7 +71,6 @@
     <p>Fosfór (P) og köfnunarefni (N) í kg á framleitt tonn — Wang et al.</p>
   </header>
 
-  <!-- GREEN: Feed bag / supplier -->
   <div class="section-label"><span class="dot dot-green"></span>Upplýsingar af fóðurpoka / frá framleiðanda</div>
   <div class="card green-card">
     <div class="field">
@@ -95,7 +87,6 @@
     </div>
   </div>
 
-  <!-- BLUE: Farm records -->
   <div class="section-label"><span class="dot dot-blue"></span>Skráningar</div>
   <div class="card blue-card">
     <div class="field">
@@ -108,7 +99,6 @@
     </div>
   </div>
 
-  <!-- GREY: Permit limits (optional) -->
   <div class="section-label"><span class="dot dot-grey"></span>Leyfi – hámarksgildi (valfrjálst)</div>
   <div class="card grey-card">
     <div class="field">
@@ -123,11 +113,9 @@
 
   <button class="calc-btn" onclick="calculate()">Reikna út losun</button>
 
-  <!-- RESULTS -->
   <div class="results" id="results">
     <h2>Niðurstöður</h2>
     <div class="result-grid">
-
       <div class="result-card">
         <div class="r-label">Köfnunarefni (N)</div>
         <div class="r-value" id="nTotal">—</div>
@@ -135,7 +123,6 @@
         <div class="r-breakdown" id="nBreakdown"></div>
         <div id="nPermit"></div>
       </div>
-
       <div class="result-card">
         <div class="r-label">Fosfór (P)</div>
         <div class="r-value" id="pTotal">—</div>
@@ -143,71 +130,57 @@
         <div class="r-breakdown" id="pBreakdown"></div>
         <div id="pPermit"></div>
       </div>
-
     </div>
     <div class="formula-note">Wang et al. — N: fast 15%, uppleyst 48% &nbsp;|&nbsp; P: fast 44%, uppleyst 26%</div>
   </div>
 </div>
 
 <script>
-function v(id) { return parseFloat(document.getElementById(id).value); }
+  function v(id) { return parseFloat(document.getElementById(id).value); }
+  function fmt(n) { return isNaN(n) ? '—' : n.toFixed(2); }
 
-function fmt(n) { return isNaN(n) ? '—' : n.toFixed(2); }
+  function calculate() {
+    const dm = v('dm'), nFrac = v('nFrac'), pFrac = v('pFrac');
+    const feed = v('feed'), biomass = v('biomass');
+    const nLimit = v('nLimit'), pLimit = v('pLimit');
 
-function calculate() {
-  const dm       = v('dm');
-  const nFrac    = v('nFrac');
-  const pFrac    = v('pFrac');
-  const feed     = v('feed');
-  const biomass  = v('biomass');
-  const nLimit   = v('nLimit');
-  const pLimit   = v('pLimit');
+    if ([dm, nFrac, pFrac, feed, biomass].some(isNaN) || biomass === 0) {
+      alert('Vinsamlegast fylltu inn öll nauðsynleg gildi.');
+      return;
+    }
 
-  if ([dm, nFrac, pFrac, feed, biomass].some(isNaN) || biomass === 0) {
-    alert('Vinsamlegast fylltu inn öll nauðsynleg gildi.');
-    return;
+    const t = biomass / 1000;
+
+    const nSolid = feed * dm * nFrac * 0.15;
+    const nDiss  = feed * dm * nFrac * 0.48;
+    const nPT    = (nSolid + nDiss) / t;
+
+    const pSolid = feed * dm * pFrac * 0.44;
+    const pDiss  = feed * dm * pFrac * 0.26;
+    const pPT    = (pSolid + pDiss) / t;
+
+    document.getElementById('nTotal').textContent = fmt(nPT);
+    document.getElementById('pTotal').textContent = fmt(pPT);
+
+    document.getElementById('nBreakdown').innerHTML =
+      `Fast form: ${fmt(nSolid / t)} kg/tonn<br>Uppleyst form: ${fmt(nDiss / t)} kg/tonn`;
+    document.getElementById('pBreakdown').innerHTML =
+      `Fast form: ${fmt(pSolid / t)} kg/tonn<br>Uppleyst form: ${fmt(pDiss / t)} kg/tonn`;
+
+    const nPEl = document.getElementById('nPermit');
+    const pPEl = document.getElementById('pPermit');
+
+    nPEl.innerHTML = (!isNaN(nLimit) && nLimit > 0)
+      ? `<span class="permit-check ${nPT <= nLimit ? 'permit-ok' : 'permit-over'}">${nPT <= nLimit ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(nLimit)} kg/tonn)</span>`
+      : '';
+
+    pPEl.innerHTML = (!isNaN(pLimit) && pLimit > 0)
+      ? `<span class="permit-check ${pPT <= pLimit ? 'permit-ok' : 'permit-over'}">${pPT <= pLimit ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(pLimit)} kg/tonn)</span>`
+      : '';
+
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
-  const tonnage = biomass / 1000; // convert kg biomass to tonnes
-
-  // N calculations
-  const nSolid    = feed * dm * nFrac * 0.15;
-  const nDissolved= feed * dm * nFrac * 0.48;
-  const nTotal    = nSolid + nDissolved;
-  const nPerTonne = nTotal / tonnage;
-
-  // P calculations
-  const pSolid    = feed * dm * pFrac * 0.44;
-  const pDissolved= feed * dm * pFrac * 0.26;
-  const pTotal    = pSolid + pDissolved;
-  const pPerTonne = pTotal / tonnage;
-
-  document.getElementById('nTotal').textContent = fmt(nPerTonne);
-  document.getElementById('pTotal').textContent = fmt(pPerTonne);
-
-  document.getElementById('nBreakdown').innerHTML =
-    `Fast form: ${fmt(nSolid / tonnage)} kg/tonn<br>Uppleyst form: ${fmt(nDissolved / tonnage)} kg/tonn`;
-
-  document.getElementById('pBreakdown').innerHTML =
-    `Fast form: ${fmt(pSolid / tonnage)} kg/tonn<br>Uppleyst form: ${fmt(pDissolved / tonnage)} kg/tonn`;
-
-  // Permit checks
-  const nPermitEl = document.getElementById('nPermit');
-  const pPermitEl = document.getElementById('pPermit');
-
-  if (!isNaN(nLimit) && nLimit > 0) {
-    const ok = nPerTonne <= nLimit;
-    nPermitEl.innerHTML = `<span class="permit-check ${ok ? 'permit-ok' : 'permit-over'}">${ok ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(nLimit)} kg/tonn)</span>`;
-  } else { nPermitEl.innerHTML = ''; }
-
-  if (!isNaN(pLimit) && pLimit > 0) {
-    const ok = pPerTonne <= pLimit;
-    pPermitEl.innerHTML = `<span class="permit-check ${ok ? 'permit-ok' : 'permit-over'}">${ok ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(pLimit)} kg/tonn)</span>`;
-  } else { pPermitEl.innerHTML = ''; }
-
-  document.getElementById('results').classList.add('visible');
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 </script>
 </body>
 </html>
