@@ -96,6 +96,218 @@
   </div>
 
   <!-- BLUE: Farm records -->
+  <div class="section-label"><span class="dot dot-blue"></span>Skráningar</div>
+  <div class="card blue-card">
+    <div class="field">
+      <label>Fóðurmagn í tímabili (kg) <span class="sub">Total feed in period</span></label>
+      <input type="number" id="feed" placeholder="t.d. 633" min="0">
+    </div>
+    <div class="field">
+      <label>Heildarlífmassi / framleiddir fiskar í tímabili (kg) <span class="sub">Gross weight produced</span></label>
+      <input type="number" id="biomass" placeholder="t.d. 724.8" min="0">
+    </div>
+  </div>
+
+  <!-- GREY: Permit limits (optional) -->
+  <div class="section-label"><span class="dot dot-grey"></span>Leyfi – hámarksgildi (valfrjálst)</div>
+  <div class="card grey-card">
+    <div class="field">
+      <label>Leyfilegt hámark N <span class="sub">Permit limit N, kg/tonne</span></label>
+      <input type="number" id="nLimit" placeholder="Sláðu inn ef til staðar" min="0">
+    </div>
+    <div class="field">
+      <label>Leyfilegt hámark P <span class="sub">Permit limit P, kg/tonne</span></label>
+      <input type="number" id="pLimit" placeholder="Sláðu inn ef til staðar" min="0">
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">Reikna út losun</button>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <h2>Niðurstöður</h2>
+    <div class="result-grid">
+
+      <div class="result-card">
+        <div class="r-label">Köfnunarefni (N)</div>
+        <div class="r-value" id="nTotal">—</div>
+        <div class="r-unit">kg N / framleitt tonn</div>
+        <div class="r-breakdown" id="nBreakdown"></div>
+        <div id="nPermit"></div>
+      </div>
+
+      <div class="result-card">
+        <div class="r-label">Fosfór (P)</div>
+        <div class="r-value" id="pTotal">—</div>
+        <div class="r-unit">kg P / framleitt tonn</div>
+        <div class="r-breakdown" id="pBreakdown"></div>
+        <div id="pPermit"></div>
+      </div>
+
+    </div>
+    <div class="formula-note">Wang et al. — N: fast 15%, uppleyst 48% &nbsp;|&nbsp; P: fast 44%, uppleyst 26%</div>
+  </div>
+</div>
+
+<script>
+function v(id) { return parseFloat(document.getElementById(id).value); }
+
+function fmt(n) { return isNaN(n) ? '—' : n.toFixed(2); }
+
+function calculate() {
+  const dm       = v('dm');
+  const nFrac    = v('nFrac');
+  const pFrac    = v('pFrac');
+  const feed     = v('feed');
+  const biomass  = v('biomass');
+  const nLimit   = v('nLimit');
+  const pLimit   = v('pLimit');
+
+  if ([dm, nFrac, pFrac, feed, biomass].some(isNaN) || biomass === 0) {
+    alert('Vinsamlegast fylltu inn öll nauðsynleg gildi.');
+    return;
+  }
+
+  const tonnage = biomass / 1000; // convert kg biomass to tonnes
+
+  // N calculations
+  const nSolid    = feed * dm * nFrac * 0.15;
+  const nDissolved= feed * dm * nFrac * 0.48;
+  const nTotal    = nSolid + nDissolved;
+  const nPerTonne = nTotal / tonnage;
+
+  // P calculations
+  const pSolid    = feed * dm * pFrac * 0.44;
+  const pDissolved= feed * dm * pFrac * 0.26;
+  const pTotal    = pSolid + pDissolved;
+  const pPerTonne = pTotal / tonnage;
+
+  document.getElementById('nTotal').textContent = fmt(nPerTonne);
+  document.getElementById('pTotal').textContent = fmt(pPerTonne);
+
+  document.getElementById('nBreakdown').innerHTML =
+    `Fast form: ${fmt(nSolid / tonnage)} kg/tonn<br>Uppleyst form: ${fmt(nDissolved / tonnage)} kg/tonn`;
+
+  document.getElementById('pBreakdown').innerHTML =
+    `Fast form: ${fmt(pSolid / tonnage)} kg/tonn<br>Uppleyst form: ${fmt(pDissolved / tonnage)} kg/tonn`;
+
+  // Permit checks
+  const nPermitEl = document.getElementById('nPermit');
+  const pPermitEl = document.getElementById('pPermit');
+
+  if (!isNaN(nLimit) && nLimit > 0) {
+    const ok = nPerTonne <= nLimit;
+    nPermitEl.innerHTML = `<span class="permit-check ${ok ? 'permit-ok' : 'permit-over'}">${ok ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(nLimit)} kg/tonn)</span>`;
+  } else { nPermitEl.innerHTML = ''; }
+
+  if (!isNaN(pLimit) && pLimit > 0) {
+    const ok = pPerTonne <= pLimit;
+    pPermitEl.innerHTML = `<span class="permit-check ${ok ? 'permit-ok' : 'permit-over'}">${ok ? '✓ Innan leyfislegs hámarks' : '✗ Yfir leyfilegu hámarki'} (${fmt(pLimit)} kg/tonn)</span>`;
+  } else { pPermitEl.innerHTML = ''; }
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Útreikningur á losun næringarefna – Fiskeldi</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f7f9; color: #1a1a2e; min-height: 100vh; padding: 32px 16px; }
+  .container { max-width: 680px; margin: 0 auto; }
+  header { margin-bottom: 32px; }
+  header h1 { font-size: 1.4rem; font-weight: 600; color: #1a1a2e; }
+  header p { font-size: 0.85rem; color: #666; margin-top: 4px; }
+
+  .section-label {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 12px; margin-top: 28px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: #2e7d52; }
+  .dot-blue  { background: #1565c0; }
+  .dot-grey  { background: #888; }
+
+  .card { background: #fff; border-radius: 12px; padding: 20px 24px; border: 1px solid #e8eaed; margin-bottom: 8px; }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 0.82rem; font-weight: 500; color: #444; margin-bottom: 6px; }
+  .field label span.sub { font-weight: 400; color: #888; font-size: 0.78rem; margin-left: 4px; }
+  .field input {
+    width: 100%; padding: 9px 12px; border: 1px solid #dde1e7; border-radius: 8px;
+    font-size: 0.95rem; color: #1a1a2e; background: #fafbfc; outline: none;
+    transition: border 0.15s;
+  }
+  .field input:focus { border-color: #1565c0; background: #fff; }
+  .green-card { border-left: 3px solid #2e7d52; }
+  .blue-card  { border-left: 3px solid #1565c0; }
+  .grey-card  { border-left: 3px solid #bbb; }
+
+  button.calc-btn {
+    width: 100%; margin-top: 28px; padding: 13px;
+    background: #1a1a2e; color: #fff; border: none; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    letter-spacing: 0.02em;
+  }
+  button.calc-btn:hover { background: #2d2d4e; }
+
+  .results { margin-top: 28px; display: none; }
+  .results.visible { display: block; }
+
+  .results h2 { font-size: 0.95rem; font-weight: 600; color: #1a1a2e; margin-bottom: 16px; }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .result-card {
+    background: #fff; border-radius: 12px; padding: 18px 20px;
+    border: 1px solid #e8eaed;
+  }
+  .result-card .r-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 6px; }
+  .result-card .r-value { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
+  .result-card .r-unit  { font-size: 0.78rem; color: #888; margin-top: 2px; }
+  .result-card .r-breakdown { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 0.78rem; color: #666; line-height: 1.7; }
+
+  .permit-check { margin-top: 8px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; padding: 4px 8px; display: inline-block; }
+  .permit-ok   { background: #e8f5e9; color: #2e7d52; }
+  .permit-over { background: #fdecea; color: #c62828; }
+
+  .formula-note { font-size: 0.73rem; color: #aaa; margin-top: 20px; text-align: center; }
+
+  @media (max-width: 480px) { .result-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Útreikningur á losun næringarefna</h1>
+    <p>Fosfór (P) og köfnunarefni (N) í kg á framleitt tonn — Wang et al.</p>
+  </header>
+
+  <!-- GREEN: Feed bag / supplier -->
+  <div class="section-label"><span class="dot dot-green"></span>Upplýsingar af fóðurpoka / frá framleiðanda</div>
+  <div class="card green-card">
+    <div class="field">
+      <label>Hlutfall þurrefnis í fóðrinu <span class="sub">Dry matter fraction</span></label>
+      <input type="number" id="dm" placeholder="t.d. 0.93" step="0.001" min="0" max="1" value="0.93">
+    </div>
+    <div class="field">
+      <label>Hlutfall köfnunarefnis í fóðrinu <span class="sub">N fraction in feed</span></label>
+      <input type="number" id="nFrac" placeholder="t.d. 0.072" step="0.001" min="0" max="1" value="0.072">
+    </div>
+    <div class="field">
+      <label>Hlutfall fosfórs í fóðrinu <span class="sub">P fraction in feed</span></label>
+      <input type="number" id="pFrac" placeholder="t.d. 0.012" step="0.001" min="0" max="1" value="0.012">
+    </div>
+  </div>
+
+  <!-- BLUE: Farm records -->
   <div class="section-label"><span class="dot dot-blue"></span>Skráningar á búinu</div>
   <div class="card blue-card">
     <div class="field">
